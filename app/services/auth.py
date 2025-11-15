@@ -1,72 +1,114 @@
 import bcrypt
 import os
+
+from jedi.settings import fast_parser
+
 USER_DATA_FILE = "users.txt" #defining the user data file
 #implement the Password Hashing Function
 def hash_password(plain_text_password):
     bytes_password = plain_text_password.encode('utf-8')
     salt = bcrypt.gensalt()
     hashed_password = bcrypt.hashpw(bytes_password, salt)
-    return hashed_password
+    return hashed_password.decode('utf-8')
+
+
 #impliment password verification function
 def verify_password(plain_text_password, hashed_password):
     bytes_plain_text_password = plain_text_password.encode('utf-8')
-    return bcrypt.checkpw(bytes_plain_text_password, hashed_password)
-test_password = "SecurePassword123"
-# Test hashing
-hashed = hash_password(test_password)
-print(f"Original password: {test_password}")
-print(f"Hashed password: {hashed}")
-print(f"Hash length: {len(hashed)} characters")
-# Test verification with correct password
-is_valid = verify_password(test_password, hashed)
-print(f"\nVerification with correct password: {is_valid}")
-# Test verification with incorrect password
-is_invalid = verify_password("WrongPassword", hashed)
-print(f"Verification with incorrect password: {is_invalid}")
-
+    bytes_hashed_password = hashed_password.encode('utf-8')
+    return bcrypt.checkpw(bytes_plain_text_password, bytes_hashed_password)
 
 # implementing user registration
-username= "Eunice"
-password = "JUL187"
 def register_user(username, password):
+    # Check if user already exists
+    if user_exists(username):
+        print("User already exists.")
+        return False
+
+    # Hash the password
     hashed_pass = hash_password(password)
-    with open ("users.txt", "a") as f:
-        f.write(f'{username};{hashed_pass}\n')
+
+    # Append in correct format: username,hashed_password
+    with open("users.txt", "a") as f:
+        f.write(f"{username},{hashed_pass}\n")
+
+    print(f"User '{username}' registered successfully.")
     return True
-print(f"user '{username}' registered")
+
 
 #USER EXISTENCE CHECK
 def user_exists(username):
+    # Handle case where file doesn't exist yet
+    if not os.path.exists("users.txt"):
+        return False
+
+    # Read file and check each username
     with open("users.txt", "r") as f:
         for line in f:
-            if line.strip() == username:
-                return True  # Username found
+            existing_username = line.strip().split(",")[0]# to compare only username
+            if existing_username == username:
+                return True
 
-    return False  # Username not found
+    return False
 
 
 # implementing user login
+import os
+
+
 def login_user(username, password):
-    with open ("users.txt", "a") as f:
-        for line in f.readlines():
-            user, hash=line.strip().split(":")
-            if user == username:
-                return verify_password(password, hash)
+    # Handle case where file doesn't exist
+    if not os.path.exists("users.txt"):
+        print("No users registered yet.")
+        return False
+
+    # Search for username
+    with open("users.txt", "r") as f:
+        for line in f:
+            stored_username, stored_hash = line.strip().split(",")
+
+            if stored_username == username:
+                # Verify password
+                if verify_password(password, stored_hash):
+                   print(f"Success: welcome {username}!")
+                   return True
+                else :
+                    print("invalid password.")
+                    return False
+    # Username not found
     return False
+
 
 # implement input validation
 def validate_username(username):
-    # This function will later check if the username is valid.
-    # 'pass' is a placeholder meaning "do nothing yet"
-    pass
+    if len(username) < 3:
+        return False, "Username must be at least 3 characters long."
+    if len(username) > 20:
+        return False, "Username cannot exceed 20 characters."
+    if not username.isalnum():
+        return False, "Username must contain only letters and numbers."
+    return True, ""
 
 def validate_password(password):
-    # This function will later check if the password is valid.
-    # 'pass' is a placeholder meaning "do nothing yet"
-    pass
+    if len(password) < 8:
+        return False, "Password must be at least 8 characters long."
+        # Uppercase
+
+    if not any(char.isupper() for char in password):
+        return False, "Password must contain at least one uppercase letter."
+
+        # Lowercase
+    if not any(char.islower() for char in password):
+        return False, "Password must contain at least one lowercase letter."
+
+        # Digit
+    if not any(char.isdigit() for char in password):
+        return False, "Password must contain at least one number."
+
+    return True, ""
+
 
 #impliment main menu
-
 
 def display_menu():
     """Displays the main menu options."""
@@ -141,6 +183,9 @@ def main():
             if login_user(username, password):
                 print("\nYou are now logged in.")
                 print("(In a real application, you would now access the data)")
+
+            if not user_exists(username):
+                print("Error:User does not exist.")
 
             # Wait for user to press Enter before returning to main menu
             input("\nPress Enter to return to main menu...")
