@@ -1,24 +1,18 @@
-from app.data.db import connect_database
+import sqlite3
+databaseLoc='users.db'
+conn = sqlite3.connect(databaseLoc)
+cursor = conn.cursor()
 
-def get_user_by_username(username):
-    """Retrieve user by username."""
-    conn = connect_database()
-    cursor = conn.cursor()
-    cursor.execute(
-        "SELECT * FROM users WHERE username = ?",
-        (username,)
-    )
-    user = cursor.fetchone()
-    conn.close()
-    return user
+with open('../../DATA/users.txt', 'r') as user:
+       i = 0
+       for line in user.readlines():
+           if i == 0:
+               i += 1
+               continue
+           line = line.strip()
+           vals = line.split(',')
+           cursor.execute(
+               """INSERT INTO users(
+           username ,password_hash ,role ) values(?,?,?)""",(vals[0], vals[1],'user'))
 
-def insert_user(username, password_hash, role='user'):
-    """Insert new user."""
-    conn = connect_database()
-    cursor = conn.cursor()
-    cursor.execute(
-        "INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
-        (username, password_hash, role)
-    )
-    conn.commit()
-    conn.close()
+conn.commit()

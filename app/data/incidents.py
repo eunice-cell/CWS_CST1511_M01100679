@@ -1,26 +1,18 @@
-import pandas as pd
-from app.data.db import connect_database
+import sqlite3
+import csv
+databaseLoc='cyber_incidents.db'
+conn = sqlite3.connect(databaseLoc)
+cursor = conn.cursor()
 
-def insert_incident(date, incident_type, severity, status, description, reported_by=None):
-    """Insert new incident."""
-    conn = connect_database()
-    cursor = conn.cursor()
-    cursor.execute("""
-        INSERT INTO cyber_incidents 
-        (date, incident_type, severity, status, description, reported_by)
-        VALUES (?, ?, ?, ?, ?, ?)
-    """, (date, incident_type, severity, status, description, reported_by))
-    conn.commit()
-    incident_id = cursor.lastrowid
-    conn.close()
-    return incident_id
-
-def get_all_incidents():
-    """Get all incidents as DataFrame."""
-    conn = connect_database()
-    df = pd.read_sql_query(
-        "SELECT * FROM cyber_incidents ORDER BY id DESC",
-        conn
-    )
-    conn.close()
-    return df
+with open('cyber_incidents.csv', 'r') as cyber:
+       i = 0
+       for line in cyber.readlines():
+           if i == 0:
+               i += 1
+               continue
+           line = line.strip()
+           vals = line.split(',')
+           cursor.execute("""INSERT INTO cyber_incidents(
+                 i_date,i_type,status,description,reported_by)
+            values(?,?,?,?,?)""",( vals[1], vals[2], vals[3], vals[4], vals[5]))
+conn.commit()
